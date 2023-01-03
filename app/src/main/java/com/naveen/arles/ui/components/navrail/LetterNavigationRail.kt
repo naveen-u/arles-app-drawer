@@ -1,9 +1,7 @@
 package com.naveen.arles.ui.components.navrail
 
 import android.content.Context
-import android.os.Build
 import android.os.VibrationEffect
-import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.MotionEvent
 import androidx.compose.foundation.ScrollState
@@ -21,6 +19,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import java.util.SortedMap
 import java.util.TreeMap
+import kotlin.math.abs
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -53,6 +53,13 @@ fun LetterNavigationRail(
     val coroutineScope = rememberCoroutineScope()
     var navRailTopPos by remember { mutableStateOf(0F) }
     var draggingOffset by remember { mutableStateOf(0F) }
+    val letterIndices by remember(letterMap) {
+        derivedStateOf {
+            val indicesMap = mutableMapOf<String, Int>()
+            letterMap.onEachIndexed { index, entry -> indicesMap[entry.key] = index }
+            return@derivedStateOf indicesMap
+        }
+    }
     val letterOffsets = TreeMap<Float, String>()
 
     val vibratorManager =
@@ -87,8 +94,7 @@ fun LetterNavigationRail(
         Spacer(modifier = Modifier.height(350.dp))
         (letterMap).map { (letter, index) ->
             val distance = if (isPressed) {
-                val (fromLetter, toLetter) = if (letter < selectedLetter) (letter to selectedLetter) else (selectedLetter to letter)
-                letterMap.subMap(fromLetter, toLetter).size
+                abs((letterIndices[letter] ?: 0) - (letterIndices[selectedLetter] ?: 0))
             } else Int.MAX_VALUE
             val rightPadding = if (isPressed) when (distance) {
                 0 -> (-50).dp
@@ -112,8 +118,8 @@ fun LetterNavigationRail(
                         }
                         letterOffsets[it.positionInParent().y] = letter
                     }
-                    .pointerInteropFilter {
-                        if (it.action == MotionEvent.ACTION_DOWN) {
+                    .pointerInteropFilter { motionEvent ->
+                        if (motionEvent.action == MotionEvent.ACTION_DOWN) {
                             setIsPressed(true)
                             setSelectedLetter(letter)
                             coroutineScope.launch {
@@ -123,7 +129,7 @@ fun LetterNavigationRail(
                                 vibratorManager.vibrate(vibrationEffect)
                             }
                             return@pointerInteropFilter true
-                        } else if (it.action == MotionEvent.ACTION_UP) {
+                        } else if (motionEvent.action == MotionEvent.ACTION_UP) {
                             setIsPressed(false)
                         }
                         return@pointerInteropFilter false
