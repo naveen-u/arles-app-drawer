@@ -14,14 +14,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.naveen.arles.ui.components.applisting.AppListing
 import com.naveen.arles.ui.components.applisting.AppListingItemData
 import com.naveen.arles.ui.components.navrail.LetterNavigationRail
 import com.naveen.arles.ui.theme.ArlesAppDrawerTheme
-import java.util.*
+import java.util.SortedMap
 
 class AppDrawerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

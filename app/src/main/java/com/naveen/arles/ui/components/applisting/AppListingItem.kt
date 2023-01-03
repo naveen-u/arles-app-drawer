@@ -1,17 +1,18 @@
 package com.naveen.arles.ui.components.applisting
 
 import android.content.Context
-import android.content.Context.VIBRATOR_SERVICE
-import android.os.Build
 import android.os.VibrationEffect
-import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.absolutePadding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,14 +34,9 @@ fun AppListingItem(item: AppListingItemData, alpha: Float) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val leftPadding: Dp by animateDpAsState(if (isPressed) 100.dp else 0.dp)
-    val vibratorManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val vibratorManager =
-            LocalContext.current.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-        vibratorManager.defaultVibrator
-    } else {
-        @Suppress("DEPRECATION")
-        LocalContext.current.getSystemService(VIBRATOR_SERVICE) as Vibrator
-    }
+    val vibratorManager =
+        (LocalContext.current.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+
     val vibrationEffect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
 
     Row(

@@ -55,13 +55,9 @@ fun LetterNavigationRail(
     var draggingOffset by remember { mutableStateOf(0F) }
     val letterOffsets = TreeMap<Float, String>()
 
-    val vibratorManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val vibratorManager =
-            LocalContext.current.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-        vibratorManager.defaultVibrator
-    } else {
-        @Suppress("DEPRECATION") LocalContext.current.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    }
+    val vibratorManager =
+        (LocalContext.current.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+
     val vibrationEffect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
 
     Column(
