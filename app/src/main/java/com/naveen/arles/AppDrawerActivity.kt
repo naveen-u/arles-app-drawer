@@ -7,6 +7,12 @@ import android.view.WindowInsets
 import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,40 +21,54 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.naveen.arles.ui.components.applisting.AppListing
 import com.naveen.arles.ui.components.applisting.AppListingItemData
 import com.naveen.arles.ui.components.navrail.LetterNavigationRail
 import com.naveen.arles.ui.theme.ArlesAppDrawerTheme
+import java.util.Collections
 import java.util.SortedMap
 
 class AppDrawerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        getDataAndSetContent()
+        setContent {
+            var appList by remember {
+                mutableStateOf(Collections.emptySortedMap<String, List<AppListingItemData>>())
+            }
+            val startingLetters by remember {
+                derivedStateOf {
+                    var currentIndex: Int = 0
+                    val startingChars = mutableMapOf<String, Int>()
+                    appList.forEach { (letter, apps) ->
+                        startingChars[letter] = currentIndex
+                        currentIndex += apps.size + 1
+                    }
+                    return@derivedStateOf startingChars.toSortedMap()
+                }
+            }
+
+            LaunchedEffect(Unit) {
+                appList = getAppList()
+            }
+
+            AppDrawer(appList = appList, startingLetters = startingLetters)
+
+        }
 
         window.setDecorFitsSystemWindows(false)
         window.insetsController?.let {
             it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             it.hide(WindowInsets.Type.statusBars())
-        }
-    }
-
-    private fun getDataAndSetContent() {
-        val appList = getAppList()
-        var currentIndex: Int = 0
-        val startingLetters = mutableMapOf<String, Int>()
-        appList.forEach { letter, apps ->
-            startingLetters[letter] = currentIndex
-            currentIndex += apps.size + 1
-        }
-        setContent {
-            AppDrawer(appList = appList, startingLetters = startingLetters.toSortedMap())
         }
     }
 
@@ -62,7 +82,7 @@ class AppDrawerActivity : ComponentActivity() {
             AppListingItemData(
                 it.loadLabel(packageManager).toString(),
                 it.loadIcon(packageManager),
-                it.activityInfo.packageName
+                it.activityInfo.packageName,
             )
         }.groupBy {
             (it.name.first().takeIf { char -> "[a-zA-Z]".toRegex().matches(char.toString()) }
@@ -78,34 +98,43 @@ fun AppDrawer(
 ) {
     val appListScrollState = rememberScrollState()
     val positionMap = remember { mutableStateMapOf<String, Float>() }
-    val (selectedLetter, setSelectedLetter) = remember { mutableStateOf(startingLetters.firstNotNullOf { it }.key) }
+    val (selectedLetter, setSelectedLetter) = remember { mutableStateOf("") }
     val (isPressed, setIsPressed) = remember { mutableStateOf(false) }
+
+    val backgroundAlpha by animateFloatAsState(targetValue = if (appList.isNotEmpty()) 0.75F else 1F)
 
     ArlesAppDrawerTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = backgroundAlpha),
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 15.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+            AnimatedVisibility(
+                visible = appList.isNotEmpty(),
+                enter = fadeIn() + slideInVertically(
+                    animationSpec = tween(),
+                    initialOffsetY = { it / 2 })
             ) {
-                AppListing(
-                    appList = appList,
-                    listState = appListScrollState,
-                    positionMap = positionMap,
-                    selectedLetter = selectedLetter,
-                    isPressed = isPressed,
-                )
-                LetterNavigationRail(
-                    letterMap = startingLetters,
-                    listState = appListScrollState,
-                    positionMap = positionMap,
-                    selectedLetter = selectedLetter,
-                    setSelectedLetter = setSelectedLetter,
-                    isPressed = isPressed,
-                    setIsPressed = setIsPressed,
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 15.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    AppListing(
+                        appList = appList,
+                        listState = appListScrollState,
+                        positionMap = positionMap,
+                        selectedLetter = selectedLetter,
+                        isPressed = isPressed,
+                    )
+                    LetterNavigationRail(
+                        letterMap = startingLetters,
+                        listState = appListScrollState,
+                        positionMap = positionMap,
+                        selectedLetter = selectedLetter,
+                        setSelectedLetter = setSelectedLetter,
+                        isPressed = isPressed,
+                        setIsPressed = setIsPressed,
+                    )
+                }
             }
         }
     }
